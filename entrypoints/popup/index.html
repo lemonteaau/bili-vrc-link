@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Bili → VRC</title>
+  </head>
+  <body>
+    <main class="compact">
+      <header class="top">
+        <div class="brand"><img src="/icon/48.png" alt="" />Bili → VRC</div>
+        <span class="tag">按需解析</span>
+      </header>
+      <h1>下一场，放什么？</h1>
+      <p>点选视频链接或视频页的右键菜单项，即可开始解析。</p>
+      <label for="source">当前解析源</label
+      ><select id="source"></select>
+      <div class="row spacer">
+        <button id="current" class="primary">解析当前视频</button
+        ><button id="settings">设置</button>
+      </div>
+      <hr class="divider" />
+      <span class="eyebrow">最近一次解析</span>
+      <p id="status" class="status" role="status"></p>
+      <textarea id="url" aria-label="最近解析的链接" readonly hidden></textarea>
+      <div class="row spacer">
+        <button id="copy" hidden>复制链接</button
+        ><button id="detail" hidden>查看结果</button>
+      </div>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Bili → VRC · 解析结果</title>
+  </head>
+  <body>
+    <main class="result">
+      <header class="top">
+        <div class="brand"><img src="/icon/48.png" alt="" />Bili → VRC</div>
+        <span class="eyebrow">Ready to play</span>
+      </header>
+      <h1 id="title">解析结果</h1>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+      <textarea id="url" aria-label="播放器链接" readonly hidden></textarea>
+      <div class="row spacer">
+        <button id="copy" class="primary" hidden>复制播放器链接</button
+        ><button id="open">打开解析网页</button
+        ><button id="settings">解析源设置</button>
+      </div>
+      <hr class="divider" />
+      <label for="source">用其他解析源重试</label
+      ><select id="source"></select
+      ><button id="retry" class="spacer">重新解析</button>
+      <p id="input" class="small"></p>
+      <p class="hint">
+        仅按所选条件提取结果，不会自动复制其他清晰度。网页方式遇到验证或页面结构变化时，可在源站手动完成。
+      </p>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

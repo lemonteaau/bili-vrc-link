@@ -1,0 +1,289 @@
+:root {
+  font-family: "Avenir Next", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: #213b34;
+  background: #f4f5ef;
+  font-size: 14px;
+  font-synthesis: none;
+  color-scheme: light;
+  --muted: #67766e;
+  --line: #dbe0d7;
+  --green: #225e4e;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button,
+a,
+input,
+select,
+textarea {
+  outline-offset: 4px;
+}
+button {
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: #213b34;
+  border-radius: 8px;
+  padding: 11px 16px;
+  font-weight: 600;
+}
+button:hover {
+  background: #eef3eb;
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+button.primary {
+  background: var(--green);
+  color: #fff;
+  border-color: var(--green);
+}
+button.primary:hover {
+  background: #184939;
+}
+button.quiet {
+  background: transparent;
+}
+a {
+  color: var(--green);
+  text-underline-offset: 3px;
+}
+p {
+  line-height: 1.75;
+  margin: 8px 0;
+  color: var(--muted);
+}
+h1 {
+  font-size: 30px;
+  line-height: 1.2;
+  letter-spacing: -1px;
+  margin: 18px 0 12px;
+}
+h2 {
+  font-size: 18px;
+  margin: 0 0 16px;
+}
+label {
+  display: block;
+  font-weight: 600;
+  margin: 19px 0 7px;
+}
+input,
+select,
+textarea {
+  display: block;
+  width: 100%;
+  border: 1px solid #c9d3c8;
+  border-radius: 7px;
+  padding: 11px 12px;
+  background: #fff;
+  color: #213b34;
+}
+textarea {
+  min-height: 110px;
+  resize: vertical;
+  word-break: break-all;
+  font:
+    12px/1.65 ui-monospace,
+    monospace;
+}
+small,
+.small {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.eyebrow {
+  font:
+    11px/1.4 ui-monospace,
+    monospace;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--green);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+}
+.brand img {
+  width: 30px;
+  height: 30px;
+}
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 21px;
+}
+.tag {
+  font:
+    11px ui-monospace,
+    monospace;
+  color: var(--green);
+  background: #e2eadb;
+  padding: 6px 9px;
+  border-radius: 4px;
+}
+.panel {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 26px;
+}
+.row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.row > * {
+  flex: 0 1 auto;
+}
+.stack {
+  display: grid;
+  gap: 20px;
+}
+.status {
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  min-height: 24px;
+}
+.status[data-error="true"] {
+  color: #a23925;
+}
+.divider {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 22px 0;
+}
+[hidden] {
+  display: none !important;
+}
+.danger {
+  color: #a23925;
+}
+.hint {
+  background: #edf2e8;
+  border-left: 3px solid #93ac78;
+  padding: 13px 16px;
+  margin: 20px 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #53654d;
+}
+.spacer {
+  margin-top: 20px;
+}
+main.wide {
+  max-width: 940px;
+  margin: 44px auto;
+  padding: 0 28px 44px;
+}
+.intro {
+  padding: 28px 0;
+}
+.settings-grid {
+  display: grid;
+  grid-template-columns: 245px 1fr;
+  gap: 22px;
+  align-items: start;
+}
+.sources {
+  display: grid;
+  gap: 8px;
+}
+.source {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 16px;
+  background: transparent;
+}
+.source.selected {
+  background: #e2eadb;
+  border-color: #adc19d;
+}
+.source small {
+  display: block;
+  font-weight: 400;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+.source b {
+  font-weight: 600;
+}
+footer {
+  margin-top: 28px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.compact {
+  width: 370px;
+  padding: 23px;
+}
+.compact h1 {
+  font-size: 24px;
+}
+.compact .top {
+  padding-bottom: 16px;
+}
+.compact .row button {
+  flex: 1;
+}
+.compact textarea {
+  min-height: 90px;
+}
+.result {
+  max-width: 700px;
+  margin: 60px auto;
+  padding: 30px;
+}
+.result textarea {
+  min-height: 160px;
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.check input {
+  width: auto;
+}
+.check label {
+  margin: 0;
+}
+@media (max-width: 650px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+  main.wide {
+    padding: 0 18px;
+  }
+  .result {
+    padding: 22px;
+    margin: 20px auto;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  button {
+    transition: background 0.15s;
+  }
+}

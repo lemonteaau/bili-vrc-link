@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Bili → VRC · 解析源</title>
+  </head>
+  <body>
+    <main class="wide">
+      <header class="top">
+        <div class="brand"><img src="/icon/48.png" alt="" />Bili → VRC</div>
+        <span class="eyebrow">Preferences / 01</span>
+      </header>
+      <div class="intro">
+        <span class="eyebrow">你的下一次放映，少几步。</span>
+        <h1>从 B 站，到 VRChat。</h1>
+        <p>
+          在视频链接或视频页的原生右键菜单中，选择「解析为 VRChat
+          播放器链接」。<br />只有点选菜单项才会运行；不修改 B
+          站页面、播放器或右键行为。
+        </p>
+      </div>
+      <div class="settings-grid">
+        <aside class="stack">
+          <div id="sources" class="sources" aria-label="解析源列表"></div>
+          <button id="add" class="quiet">＋ 添加解析源</button>
+        </aside>
+        <section class="panel">
+          <h2 id="heading">编辑解析源</h2>
+          <form id="form">
+            <label for="name">名称</label
+            ><input id="name" required maxlength="80" /><label for="prefix"
+              >解析链接前缀</label
+            ><input
+              id="prefix"
+              required
+              placeholder="https://example.com/?url="
+            />
+            <p class="small">
+              直接粘贴网站提供的前缀。也可使用 {url}（编码）或
+              {rawUrl}（原样）占位符。
+            </p>
+            <label for="mode">处理方式</label
+            ><select id="mode">
+              <option value="api">直接取主节点 · 糕站兼容接口</option>
+              <option value="page">打开解析网页并提取结果</option>
+              <option value="direct">复制拼接链接 · 播放器直接解析</option>
+            </select>
+            <p id="modeHelp" class="small"></p>
+            <div id="extract">
+              <label for="keywords">结果标题需要包含</label
+              ><input id="keywords" placeholder="1440P FLV 主節點" />
+              <p class="small">
+                空格分隔；所有词都必须出现，主节点支持简繁体。不会自动换成其他清晰度。
+              </p>
+            </div>
+            <details id="advanced">
+              <summary class="spacer">网页提取的高级设置</summary>
+              <label for="selector">CSS 选择器（可选）</label
+              ><input
+                id="selector"
+                placeholder=".result-item:first-child"
+              /><label for="attribute">读取属性（可选）</label
+              ><input id="attribute" placeholder="data-clipboard-text" />
+              <p class="small">
+                选择结果容器或链接 /
+                输入框。留空自动读取链接、输入框、复制按钮中的地址；填写选择器会替代标题匹配。不会执行网站提供的脚本。
+              </p>
+            </details>
+            <hr class="divider" />
+            <div class="check">
+              <input id="active" type="checkbox" /><label for="active"
+                >用作右键菜单的默认解析源</label
+              >
+            </div>
+            <div class="row spacer">
+              <button class="primary" type="submit">保存并授权</button
+              ><button id="delete" class="quiet danger" type="button">
+                删除此源
+              </button>
+            </div>
+            <p id="status" class="status" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+      </div>
+      <footer>
+        设置仅保存在当前浏览器。解析时只发送你主动选择的视频链接到所选解析站，不发送
+        B 站 Cookie。流地址可能过期，播放前可重新解析。
+      </footer>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
