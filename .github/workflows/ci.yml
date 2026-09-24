@@ -48,6 +48,7 @@ jobs:
           name: bili-vrc-link-chrome-${{ github.sha }}
           path: .output/*-chrome.zip
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 14
 
       - name: Save Firefox package
@@ -56,4 +57,5 @@ jobs:
           name: bili-vrc-link-firefox-${{ github.sha }}
           path: .output/*-firefox.zip
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 14
