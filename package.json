@@ -1,6 +1,6 @@
 {
   "name": "bili-vrc-link",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "description": "右键将 Bilibili 视频解析为 VRChat 播放器链接",
