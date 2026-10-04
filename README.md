@@ -15,10 +15,10 @@ Chrome / Firefox 扩展：通过右键菜单解析 B 站视频，获取 VRChat �
 从 [GitHub Releases](https://github.com/lemonteaau/bili-vrc-link/releases) 下载，解压后在浏览器扩展管理页加载。Firefox 永久安装需要 Mozilla 签名。
 
 ```sh
-npm ci
-npm run dev           # Chrome
-npm run dev:firefox   # Firefox
-npm run check && npm test
+pnpm install --frozen-lockfile
+pnpm run dev           # Chrome
+pnpm run dev:firefox   # Firefox
+pnpm run check && pnpm test
 ```
 
 ## 许可证
