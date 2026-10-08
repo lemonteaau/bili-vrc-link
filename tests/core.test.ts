@@ -6,8 +6,10 @@ import {
   selectStream,
   resolveApi,
   validateSource,
+  resolveLocal,
 } from "../lib/core";
-const s = defaults.sources[0];
+const s = defaults.sources.find((x) => x.id === "gao")!;
+const l = defaults.sources.find((x) => x.id === "local")!;
 const video = "https://www.bilibili.com/video/BV1xx411c7mD";
 describe("视频链接", () => {
   it("保留分 P，移除追踪参数", () =>
@@ -43,6 +45,126 @@ describe("视频链接", () => {
     expect(
       sourceUrl({ ...s, prefix: "https://a.test/?url={rawUrl}" }, video),
     ).toBe("https://a.test/?url=" + video);
+  });
+});
+describe("本地解析", () => {
+  const cdn = (host: string) => `https://${host}/v.mp4?deadline=1&upsig=x`;
+  const ok = (data: unknown) => new Response(JSON.stringify({ code: 0, data }));
+  const play = (durl: unknown) =>
+    ok({
+      quality: 64,
+      accept_quality: [64, 16],
+      accept_description: ["高清 720P", "流畅 360P"],
+      durl,
+    });
+  const mock = (...responses: Response[]) => {
+    const f = vi.fn();
+    for (const r of responses) f.mockResolvedValueOnce(r);
+    return f;
+  };
+  it("是默认源，按分 P 取 cid，带登录状态请求", async () => {
+    expect(defaults.activeId).toBe("local");
+    const f = mock(
+      ok([{ cid: 11 }, { cid: 22 }]),
+      play([{ url: cdn("upos-sz-mirrorcosov.bilivideo.com") }]),
+    );
+    const r = await resolveLocal(l, video + "?p=2", f);
+    expect(r).toEqual({
+      url: cdn("upos-sz-mirrorcosov.bilivideo.com"),
+      title: "720P 直链（2 小时内有效）",
+    });
+    expect(f.mock.calls[0][0]).toContain("pagelist?bvid=BV1xx411c7mD");
+    const u = new URL(f.mock.calls[1][0]);
+    expect(u.searchParams.get("cid")).toBe("22");
+    expect(u.searchParams.get("platform")).toBe("html5");
+    expect(f.mock.calls[1][1].credentials).toBe("include");
+  });
+  it("av 号使用 aid / avid", async () => {
+    const f = mock(
+      ok([{ cid: 1 }]),
+      play([{ url: cdn("upos-a.bilivideo.com") }]),
+    );
+    await resolveLocal(l, "https://www.bilibili.com/video/av170001", f);
+    expect(f.mock.calls[0][0]).toContain("pagelist?aid=170001");
+    expect(f.mock.calls[1][0]).toContain("avid=170001");
+  });
+  it("优先源站镜像而非 PCDN，并可替换 CDN 域名", async () => {
+    const durl = [
+      {
+        url: cdn("xy1x2xy.mcdn.bilivideo.cn:4483"),
+        backup_url: [cdn("upos-sz-mirrorcosov.bilivideo.com")],
+      },
+    ];
+    expect(
+      (await resolveLocal(l, video, mock(ok([{ cid: 1 }]), play(durl)))).url,
+    ).toContain("//upos-sz-mirrorcosov.bilivideo.com/");
+    const r = await resolveLocal(
+      { ...l, prefix: "upos-sz-mirrorali.bilivideo.com" },
+      video,
+      mock(ok([{ cid: 1 }]), play(durl)),
+    );
+    expect(r.url).toBe(cdn("upos-sz-mirrorali.bilivideo.com"));
+    await expect(
+      resolveLocal(
+        { ...l, prefix: "upos-sz-mirrorali.bilivideo.com" },
+        video,
+        mock(ok([{ cid: 1 }]), play([{ url: cdn("x.mcdn.bilivideo.cn") }])),
+      ),
+    ).rejects.toThrow("PCDN");
+  });
+  it("展开短链接", async () => {
+    const head = new Response(null);
+    Object.defineProperty(head, "url", { value: video + "?p=2&share=x" });
+    const f = mock(
+      head,
+      ok([{ cid: 1 }, { cid: 2 }]),
+      play([{ url: cdn("upos-a.bilivideo.com") }]),
+    );
+    await resolveLocal(l, "https://b23.tv/abc123", f);
+    expect(f.mock.calls[0][1].method).toBe("HEAD");
+    expect(new URL(f.mock.calls[2][0]).searchParams.get("cid")).toBe("2");
+  });
+  it("报告分 P 不存在、视频不存在、风控和非 JSON", async () => {
+    await expect(
+      resolveLocal(l, video + "?p=3", mock(ok([{ cid: 1 }]))),
+    ).rejects.toThrow("第 3 分 P");
+    for (const [code, text] of [
+      [-404, "不存在"],
+      [-412, "风控"],
+    ] as const)
+      await expect(
+        resolveLocal(l, video, mock(new Response(JSON.stringify({ code })))),
+      ).rejects.toThrow(text);
+    await expect(
+      resolveLocal(l, video, mock(new Response("<html>", { status: 412 }))),
+    ).rejects.toThrow("412");
+  });
+  it("番剧和分段视频明确报错", async () => {
+    const f = vi.fn();
+    await expect(
+      resolveLocal(l, "https://www.bilibili.com/bangumi/play/ep123", f),
+    ).rejects.toThrow("番剧");
+    expect(f).not.toHaveBeenCalled();
+    await expect(
+      resolveLocal(
+        l,
+        video,
+        mock(
+          ok([{ cid: 1 }]),
+          play([{ url: cdn("a.b") }, { url: cdn("c.d") }]),
+        ),
+      ),
+    ).rejects.toThrow("单文件");
+  });
+  it("CDN 域名校验并去掉协议", () => {
+    expect(
+      validateSource({
+        ...l,
+        prefix: "https://upos-sz-mirrorali.bilivideo.com/",
+      }).prefix,
+    ).toBe("upos-sz-mirrorali.bilivideo.com");
+    expect(validateSource(l).prefix).toBe("");
+    expect(() => validateSource({ ...l, prefix: "a.test/x?y" })).toThrow("CDN");
   });
 });
 describe("只选指定流", () => {

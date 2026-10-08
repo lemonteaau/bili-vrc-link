@@ -2,15 +2,25 @@ export type Source = {
   id: string;
   name: string;
   prefix: string;
-  mode: "api" | "page" | "direct";
+  // local: prefix holds an optional replacement CDN host instead of a URL.
+  mode: "api" | "page" | "direct" | "local";
   keywords: string;
   selector: string;
   attribute: string;
 };
 export type Settings = { activeId: string; sources: Source[] };
 export const defaults: Settings = {
-  activeId: "gao",
+  activeId: "local",
   sources: [
+    {
+      id: "local",
+      name: "本地解析 · B 站直链",
+      prefix: "",
+      mode: "local",
+      keywords: "",
+      selector: "",
+      attribute: "",
+    },
     {
       id: "gao",
       name: "糕 · 1440P 主节点",
@@ -63,8 +73,12 @@ export function normalizeVideo(value: string): string {
   if (p && /^[1-9]\d*$/.test(p)) out.searchParams.set("p", p);
   return out.href;
 }
+export function needsAccess(source: Source): boolean {
+  return source.mode === "api" || source.mode === "page";
+}
 export function sourceUrl(source: Source, video: string): string {
   const prefix = source.prefix.trim();
+  if (source.mode === "local") return httpUrl(video).href;
   const built = prefix.includes("{url}")
     ? prefix.replaceAll("{url}", encodeURIComponent(video))
     : prefix.includes("{rawUrl}")
@@ -77,8 +91,19 @@ export function originPattern(source: Source): string {
 }
 export function validateSource(source: Source): Source {
   if (!source.name.trim()) throw new Error("请填写解析源名称");
-  if (!["api", "page", "direct"].includes(source.mode))
+  if (!["api", "page", "direct", "local"].includes(source.mode))
     throw new Error("未知解析模式");
+  if (source.mode === "local") {
+    const cdn = source.prefix
+      .trim()
+      .replace(/^https?:\/\//i, "")
+      .replace(/\/$/, "");
+    if (cdn && !/^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(cdn))
+      throw new Error(
+        "CDN 域名只填主机名，例如 upos-sz-mirrorali.bilivideo.com",
+      );
+    return { ...source, name: source.name.trim(), prefix: cdn };
+  }
   if (
     !source.prefix.trim().includes("{url}") &&
     !source.prefix.trim().includes("{rawUrl}") &&
@@ -178,4 +203,92 @@ export async function resolveApi(
     await json(`/api/parse/video/${bvid}`),
     source.keywords || "1440P FLV 主節點",
   );
+}
+const BILI_API = "https://api.bilibili.com/x/player";
+// Malformed ID, not found, or made invisible by the uploader.
+const MISSING = [-400, -404, 62002, 62004, 62012];
+// Requests come from the user's own browser and IP, which Bilibili does not ban like datacenter IPs.
+export async function resolveLocal(
+  source: Source,
+  input: string,
+  fetcher: typeof fetch = fetch,
+) {
+  async function json(path: string, params: Record<string, string>) {
+    const r = await fetcher(
+      `${BILI_API}/${path}?${new URLSearchParams(params)}`,
+      {
+        credentials: "include",
+        signal: AbortSignal.timeout(15000),
+      },
+    );
+    let body: { code?: number; message?: string; data?: unknown };
+    try {
+      body = await r.json();
+    } catch {
+      throw new Error(`B 站接口返回 HTTP ${r.status}，请稍后重试`);
+    }
+    if (body.code === 0) return body.data;
+    if (body.code === -412) throw new Error("请求被 B 站风控拦截，请稍后重试");
+    if (MISSING.includes(body.code as number))
+      throw new Error("视频不存在或不可见");
+    throw new Error(`B 站接口返回 ${body.code}：${body.message || "未知错误"}`);
+  }
+  let video = normalizeVideo(input);
+  if (new URL(video).hostname === "b23.tv") {
+    // Only the final address matters; the video page itself may answer 412.
+    const r = await fetcher(video, {
+      method: "HEAD",
+      credentials: "omit",
+      signal: AbortSignal.timeout(15000),
+    });
+    video = normalizeVideo(r.url);
+    if (new URL(video).hostname === "b23.tv")
+      throw new Error("短链接展开失败，请使用完整 B 站视频链接");
+  }
+  const u = new URL(video);
+  const id = u.pathname.match(/^\/video\/(BV[a-zA-Z0-9]{10}|av\d+)$/i)?.[1];
+  if (!id) throw new Error("本地解析暂不支持番剧，请换用其他解析源");
+  const aid = /^av/i.test(id) ? id.slice(2) : null;
+  const p = Number(u.searchParams.get("p") || 1);
+  const pages = (await json("pagelist", aid ? { aid } : { bvid: id })) as
+    { cid?: number }[] | null;
+  const cid = pages?.[p - 1]?.cid;
+  if (!cid) throw new Error(`该视频没有第 ${p} 分 P`);
+  const data = (await json("playurl", {
+    ...(aid ? { avid: aid } : { bvid: id }),
+    cid: String(cid),
+    qn: "116",
+    fnval: "1",
+    platform: "html5",
+    high_quality: "1",
+  })) as {
+    quality?: number;
+    accept_quality?: number[];
+    accept_description?: string[];
+    durl?: { url?: unknown; backup_url?: unknown }[];
+  } | null;
+  const durl = data?.durl;
+  if (!durl || durl.length !== 1) throw new Error("B 站没有返回单文件视频");
+  const urls = [durl[0]!.url, ...[durl[0]!.backup_url ?? []].flat()]
+    .filter((x): x is string => typeof x === "string")
+    .map(httpUrl);
+  // Prefer origin mirrors: PCDN nodes (mcdn, szbdyd) use odd ports and often fail outside mainland China.
+  const mirror = urls.find((x) =>
+    /^upos-[\w-]+\.(bilivideo\.com|akamaized\.net)$/.test(x.hostname),
+  );
+  const selected = mirror ?? urls[0];
+  if (!selected) throw new Error("B 站没有返回可用的流地址");
+  if (source.prefix) {
+    if (!mirror) throw new Error("B 站只返回了 PCDN 节点，无法替换 CDN 域名");
+    // The signature does not cover the host, so any upos mirror serves the same link.
+    selected.host = source.prefix;
+  }
+  const label =
+    data?.accept_description?.[
+      data.accept_quality?.indexOf(data.quality ?? -1) ?? -1
+    ] ?? "";
+  return {
+    url: selected.href,
+    title: `${label.split(" ").pop() || "B 站"} 直链（2 小时内有效）`,
+  };
 }

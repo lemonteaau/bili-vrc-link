@@ -91,7 +91,63 @@ describe("原生右键菜单", () => {
     });
     expect(fetch).not.toHaveBeenCalled();
   });
+  it("默认源在后台请求 B 站接口并复制直链", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ code: 0, data: [{ cid: 1 }] })),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            code: 0,
+            data: { durl: [{ url: "https://upos-a.bilivideo.com/v.mp4" }] },
+          }),
+        ),
+      );
+    mock.listeners.click(
+      {
+        menuItemId: "link",
+        linkUrl: "https://www.bilibili.com/video/BV1xx411c7mD",
+        pageUrl: "https://www.bilibili.com/",
+      },
+      { id: 3 },
+    );
+    await vi.waitFor(() =>
+      expect(mock.browser.scripting.executeScript).toHaveBeenCalled(),
+    );
+    expect(mock.browser.scripting.executeScript.mock.calls[0][0].args[0]).toBe(
+      "https://upos-a.bilivideo.com/v.mp4",
+    );
+    expect(vi.mocked(fetch).mock.calls[0][0]).toContain("api.bilibili.com");
+  });
+  it("从 0.1.x 升级时加入本地解析源并设为默认，只做一次", async () => {
+    mock.data.settings = { activeId: "91", sources: [{ id: "91" }] };
+    mock.listeners.install({ reason: "update", previousVersion: "0.1.1" });
+    await vi.waitFor(() => expect(mock.data.settings.activeId).toBe("local"));
+    expect(mock.data.settings.sources.map((s: any) => s.id)).toEqual([
+      "local",
+      "91",
+    ]);
+    mock.data.settings = { activeId: "91", sources: [{ id: "91" }] };
+    mock.listeners.install({ reason: "update", previousVersion: "0.2.0" });
+    await Promise.resolve();
+    expect(mock.data.settings.activeId).toBe("91");
+  });
   it("只有点选链接菜单后解析，使用目标链接而不是当前页面", async () => {
+    mock.data.settings = {
+      activeId: "gao",
+      sources: [
+        {
+          id: "gao",
+          name: "糕",
+          prefix: "https://vrcbilibili.xn--o8z.tw/?url=",
+          mode: "api",
+          keywords: "1440P FLV 主節點",
+          selector: "",
+          attribute: "",
+        },
+      ],
+    };
     mock.listeners.click(
       {
         menuItemId: "link",

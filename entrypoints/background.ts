@@ -1,7 +1,10 @@
 import { browser } from "wxt/browser";
 import {
+  defaults,
+  type Settings,
   normalizeVideo,
   resolveApi,
+  resolveLocal,
   sourceUrl,
   originPattern,
 } from "../lib/core";
@@ -29,9 +32,24 @@ export default defineBackground(() => {
       documentUrlPatterns: linkPatterns,
     });
   }
-  browser.runtime.onInstalled.addListener(() => {
+  browser.runtime.onInstalled.addListener((details) => {
     void menus();
+    // 0.1.x only offered third-party sources; switch saved settings to local parsing once.
+    if (
+      details?.reason === "update" &&
+      details.previousVersion?.startsWith("0.1.")
+    )
+      void addLocalSource();
   });
+  async function addLocalSource() {
+    const stored = (await browser.storage.local.get("settings")).settings as
+      Settings | undefined;
+    const local = defaults.sources[0]!;
+    if (!stored || stored.sources.some((s) => s.id === local.id)) return;
+    stored.sources.unshift(local);
+    stored.activeId = local.id;
+    await browser.storage.local.set({ settings: stored });
+  }
   browser.runtime.onStartup.addListener(() => {
     void menus();
   });
@@ -100,7 +118,9 @@ export default defineBackground(() => {
     await badge(job, "…");
     try {
       job.input = normalizeVideo(input);
-      if (source.mode === "direct") {
+      if (source.mode === "local") {
+        await finish(job, await resolveLocal(source, job.input), tabId);
+      } else if (source.mode === "direct") {
         await finish(
           job,
           {

@@ -1,7 +1,7 @@
 import "../../lib/ui.css";
 import { browser } from "wxt/browser";
 import { getJob, settings, type Job } from "../../lib/store";
-import { sourceUrl, originPattern } from "../../lib/core";
+import { sourceUrl, originPattern, needsAccess } from "../../lib/core";
 const $ = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
 const id = new URLSearchParams(location.search).get("id") || "";
@@ -59,7 +59,7 @@ $("retry").onclick = async () => {
   btn.disabled = true;
   try {
     if (
-      source.mode !== "direct" &&
+      needsAccess(source) &&
       !(await browser.permissions.request({ origins: [originPattern(source)] }))
     )
       throw new Error("未授权该解析源");

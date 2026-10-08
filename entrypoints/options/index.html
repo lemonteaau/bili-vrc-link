@@ -34,14 +34,16 @@
           <h2 id="heading">编辑解析源</h2>
           <form id="form">
             <label for="name">名称</label
-            ><input id="name" required maxlength="80" /><label for="prefix"
+            ><input id="name" required maxlength="80" /><label
+              id="prefixLabel"
+              for="prefix"
               >解析链接前缀</label
             ><input
               id="prefix"
               required
               placeholder="https://example.com/?url="
             />
-            <p class="small">
+            <p id="prefixHelp" class="small">
               直接粘贴网站提供的前缀。也可使用 {url}（编码）或
               {rawUrl}（原样）占位符。
             </p>
@@ -49,6 +51,7 @@
             ><select id="mode">
               <option value="api">直接取主节点 · 糕站兼容接口</option>
               <option value="page">打开解析网页并提取结果</option>
+              <option value="local">本地解析 · B 站直链</option>
               <option value="direct">复制拼接链接 · 播放器直接解析</option>
             </select>
             <p id="modeHelp" class="small"></p>
@@ -89,8 +92,9 @@
         </section>
       </div>
       <footer>
-        设置仅保存在当前浏览器。解析时只发送你主动选择的视频链接到所选解析站，不发送
-        B 站 Cookie。流地址可能过期，播放前可重新解析。
+        设置仅保存在当前浏览器。本地解析以你的 B 站登录状态直接请求 B
+        站接口；第三方解析源只收到你选择的视频链接，不会收到 B 站
+        Cookie。流地址可能过期，播放前可重新解析。
       </footer>
     </main>
     <script type="module" src="./main.ts"></script>
