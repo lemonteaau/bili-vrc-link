@@ -8,27 +8,30 @@
     <main class="compact">
       <header class="top">
         <div class="brand"><img src="/icon/48.png" alt="" />Bili → VRC</div>
-        <span class="tag">按需解析</span>
+        <button id="settings" class="quiet small-button">设置</button>
       </header>
-      <h1>下一场，放什么？</h1>
-      <p>点选视频链接或视频页的右键菜单项，即可开始解析。</p>
-      <p class="small">
-        Bili-Gate 首页：按住 Option（⌥）/
-        Alt，再右键视频封面，即可显示原生菜单。
-      </p>
-      <label for="source">当前解析源</label
-      ><select id="source"></select>
-      <div class="row spacer">
-        <button id="current" class="primary">解析当前视频</button
-        ><button id="settings">设置</button>
-      </div>
+      <h1>把 B 站视频放进 VRChat</h1>
+      <ol class="steps">
+        <li>在 B 站视频页或视频链接上点<b>右键</b></li>
+        <li>选「复制……VRChat 播放链接」</li>
+        <li>到 VRChat 的视频播放器里<b>粘贴</b></li>
+      </ol>
+      <button id="current" class="primary wide-button">
+        复制当前视频的播放链接
+      </button>
+      <p id="order" class="small"></p>
       <hr class="divider" />
-      <span class="eyebrow">最近一次解析</span>
+      <span class="eyebrow">最近一次</span>
       <p id="status" class="status" role="status"></p>
-      <textarea id="url" aria-label="最近解析的链接" readonly hidden></textarea>
+      <textarea
+        id="url"
+        aria-label="最近复制的播放链接"
+        readonly
+        hidden
+      ></textarea>
       <div class="row spacer">
-        <button id="copy" hidden>复制链接</button
-        ><button id="detail" hidden>查看结果</button>
+        <button id="copy" hidden>再复制一次</button
+        ><button id="detail" hidden>查看详情</button>
       </div>
     </main>
     <script type="module" src="./main.ts"></script>

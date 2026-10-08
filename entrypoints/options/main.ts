@@ -3,6 +3,8 @@ import { browser } from "wxt/browser";
 import { settings } from "../../lib/store";
 import {
   type Source,
+  defaults,
+  modes,
   validateSource,
   originPattern,
   needsAccess,
@@ -11,56 +13,78 @@ const $ = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
 const input = (id: string) => $<HTMLInputElement>(id);
 let cfg = await settings();
-let editing = cfg.activeId;
+let editing = cfg.sources[0]?.id ?? "";
 const status = (text: string, error = false) => {
   $("status").textContent = text;
   $("status").dataset.error = String(error);
 };
+const save = () => browser.storage.local.set({ settings: cfg });
+for (const [value, { label }] of Object.entries(modes))
+  $<HTMLSelectElement>("mode").add(new Option(label, value));
 function modeHelp() {
-  const mode = $<HTMLSelectElement>("mode").value;
-  $("extract").hidden = mode === "direct" || mode === "local";
-  // Local mode reuses the prefix field for an optional CDN host.
+  const mode = $<HTMLSelectElement>("mode").value as Source["mode"];
+  $("modeHelp").textContent = modes[mode].help;
+  $("advanced").hidden = mode !== "api" && mode !== "page";
+  $("pageOnly").hidden = mode !== "page";
+  // Local mode reuses the address field for an optional CDN host.
   const local = mode === "local";
   input("prefix").required = !local;
   input("prefix").placeholder = local
     ? "upos-sz-mirrorali.bilivideo.com"
     : "https://example.com/?url=";
   $("prefixLabel").textContent = local
-    ? "替换 CDN 域名（可选）"
-    : "解析链接前缀";
+    ? "替换 CDN 域名（可选，一般留空）"
+    : "网址";
   $("prefixHelp").textContent = local
-    ? "留空使用 B 站返回的节点。公开世界有白名单时，可换成世界允许的 B 站 CDN 域名。"
-    : "直接粘贴网站提供的前缀。也可使用 {url}（编码）或 {rawUrl}（原样）占位符。";
-  $("advanced").hidden = mode !== "page";
-  $("modeHelp").textContent =
-    mode === "api"
-      ? "后台解析并复制，通常无需离开 B 站。仅适用于提供 /api/parse/video/BV… 接口的站点，目前仅第 1 分 P。"
-      : mode === "page"
-        ? "打开解析网页，等待并提取匹配的流地址。未匹配或有人机验证时保留网页，供手动操作。"
-        : mode === "local"
-          ? "不经过任何服务器：用你的浏览器直接请求 B 站接口，复制音画合一的 MP4 直链。链接约 2 小时后过期；登录后链接中会带有你的 UID；不支持番剧。"
-          : "仅适用于网站明确支持将前缀链接直接交给 VRChat 的情况；不会将网页冒充已解析的流地址。";
+    ? "留空就用 B 站给的节点。某些公开世界只允许特定域名时，可以换成世界允许的 B 站 CDN 域名。"
+    : "填网站提供的地址，视频链接会接在最后面；也可以用 {url} 标出视频链接的位置。";
 }
 function list() {
   const root = $("sources");
   root.replaceChildren();
-  for (const s of cfg.sources) {
+  cfg.sources.forEach((s, i) => {
+    const item = document.createElement("li");
+    item.className = "source-item" + (s.id === editing ? " selected" : "");
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "source" + (s.id === editing ? " selected" : "");
+    btn.className = "source";
+    const order = document.createElement("span");
+    order.className = "order";
+    order.textContent = String(i + 1);
     const title = document.createElement("b");
     title.textContent = s.name;
     const sub = document.createElement("small");
-    sub.textContent =
-      s.id === cfg.activeId
-        ? "● 当前默认源"
-        : s.mode === "local"
-          ? s.prefix || "B 站接口"
-          : new URL(s.prefix).hostname;
-    btn.append(title, sub);
+    sub.textContent = `${i === 0 ? "首选" : "备用"} · ${modes[s.mode]?.label ?? s.mode}`;
+    btn.append(order, title, sub);
     btn.onclick = () => load(s);
-    root.append(btn);
-  }
+    const move = document.createElement("div");
+    move.className = "move";
+    for (const [label, delta] of [
+      ["↑", -1],
+      ["↓", 1],
+    ] as const) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = label;
+      b.setAttribute(
+        "aria-label",
+        `把「${s.name}」${delta < 0 ? "上移" : "下移"}`,
+      );
+      b.disabled = !cfg.sources[i + delta];
+      b.onclick = async () => {
+        [cfg.sources[i], cfg.sources[i + delta]] = [
+          cfg.sources[i + delta]!,
+          cfg.sources[i]!,
+        ];
+        await save();
+        list();
+        status("顺序已保存。");
+      };
+      move.append(b);
+    }
+    item.append(btn, move);
+    root.append(item);
+  });
 }
 function load(s: Source) {
   editing = s.id;
@@ -73,9 +97,9 @@ function load(s: Source) {
   ] as const)
     input(key).value = s[key];
   $<HTMLSelectElement>("mode").value = s.mode;
-  input("active").checked = s.id === cfg.activeId;
-  $<HTMLButtonElement>("delete").disabled =
-    cfg.sources.length < 2 || !cfg.sources.some((x) => x.id === s.id);
+  const saved = cfg.sources.some((x) => x.id === s.id);
+  $("heading").textContent = saved ? "修改解析源" : "添加解析源";
+  $<HTMLButtonElement>("delete").disabled = cfg.sources.length < 2 || !saved;
   status("");
   modeHelp();
   list();
@@ -86,11 +110,18 @@ $("add").onclick = () =>
     id: crypto.randomUUID(),
     name: "",
     prefix: "",
-    mode: "page",
+    mode: "redirect",
     keywords: "1440P FLV 主節點",
     selector: "",
     attribute: "",
   });
+$("reset").onclick = async () => {
+  if (!confirm("恢复默认的解析方式和顺序？你添加的解析源会被删除。")) return;
+  cfg = structuredClone(defaults);
+  await save();
+  load(cfg.sources[0]!);
+  status("已恢复默认设置。");
+};
 $("form").onsubmit = async (event) => {
   event.preventDefault();
   try {
@@ -109,15 +140,17 @@ $("form").onsubmit = async (event) => {
       needsAccess(s) &&
       !(await browser.permissions.request({ origins: [originPattern(s)] }))
     )
-      throw new Error("未获得访问权限，设置尚未保存。也可选择仅复制拼接链接。");
+      throw new Error("没有获得访问这个网站的权限，设置还没保存。");
     const index = cfg.sources.findIndex((x) => x.id === s.id);
     if (index < 0) cfg.sources.push(s);
     else cfg.sources[index] = s;
-    if (input("active").checked) cfg.activeId = s.id;
-    await browser.storage.local.set({ settings: cfg });
-    list();
-    status("已保存。下次点选右键菜单时生效。");
-    $<HTMLButtonElement>("delete").disabled = cfg.sources.length < 2;
+    await save();
+    load(s);
+    status(
+      index < 0
+        ? "已保存，并加到了列表最后。可以用 ↑ 调整它的顺序。"
+        : "已保存。",
+    );
   } catch (e) {
     status(e instanceof Error ? e.message : String(e), true);
   }
@@ -125,9 +158,8 @@ $("form").onsubmit = async (event) => {
 $("delete").onclick = async () => {
   if (cfg.sources.length < 2) return;
   cfg.sources = cfg.sources.filter((s) => s.id !== editing);
-  if (cfg.activeId === editing) cfg.activeId = cfg.sources[0]!.id;
-  await browser.storage.local.set({ settings: cfg });
-  load(cfg.sources.find((s) => s.id === cfg.activeId)!);
-  status("已删除解析源。");
+  await save();
+  load(cfg.sources[0]!);
+  status("已删除。");
 };
-load(cfg.sources.find((s) => s.id === editing) || cfg.sources[0]!);
+load(cfg.sources.find((s) => s.id === editing) ?? cfg.sources[0]!);

@@ -1,27 +1,50 @@
 # Bili → VRC
 
-Chrome / Firefox 扩展：通过右键菜单解析 B 站视频，获取 VRChat 播放器链接。默认在浏览器本地请求 B 站接口，复制音画合一的 MP4 直链；也可换用提供 1440P 的第三方解析源。
+一个 Chrome / Firefox 扩展：在 B 站视频上点右键，就能复制一条可以直接粘贴进 VRChat 视频播放器的链接。
 
-## 使用
+## 怎么用
 
-- 右键 B 站视频链接，或视频页空白处，选择对应的解析菜单项。
-- Bili-Gate 首页：按住 Option（Mac）或 Alt（Windows / Linux）再右键视频封面。
-- 默认使用本地解析：不经过任何服务器，以你的 B 站登录状态请求接口（未登录为 720P）。链接约 2 小时后过期；登录后链接中带有你的 UID；不支持番剧。可在设置中把 CDN 域名换成其他 B 站节点。
-- 在扩展设置中可更换或添加解析源，例如 `https://biliplayer.91vrchat.com/player/?url=`。
-- VRChat 未将 B 站域名列入白名单：公开房间无法播放，其他房间需开启 Allow Untrusted URLs。
+1. 在 B 站视频页或视频链接上点**右键**。
+2. 选「复制这个视频 / 当前视频的 VRChat 播放链接」。
+3. 到 VRChat 世界里的视频播放器，把链接**粘贴**进地址栏。
 
-只在选择菜单项后解析；普通右键不会触发。
+也可以点浏览器工具栏上的扩展图标，再点「复制当前视频的播放链接」。
+
+- 用 Bili-Gate 首页的话，按住 Option（⌥，Mac）或 Alt（Windows / Linux）再右键视频封面，就能看到本扩展的菜单。
+- VRChat 没有把 B 站列入网址白名单：公开房间（Public）通常无法播放；好友房或私人房间需要在 VRChat 设置里开启「Allow Untrusted URLs」。
+
+## 解析方式
+
+插件会按设置页里的顺序**从上到下**依次尝试，第一个成功的就会被复制；可以在设置页用 ↑ ↓ 调整顺序，也可以添加自己的解析源。默认顺序：
+
+| 顺序 | 方式                                 | 说明                                                                                                                   |
+| ---- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| 1    | 柠檬茶在线解析（`vrc.lemontea.xyz`） | 复制一个长期有效的链接，房间里每个人播放时都会实时取最新的视频地址。                                                   |
+| 2    | 本机直接获取                         | 不经过第三方，由浏览器直接向 B 站获取音画合一的 MP4。通常 720P，链接约 2 小时后失效；登录 B 站时链接里会带有你的 UID。 |
+| 3    | 糕站 · 1440P                         | 第三方解析站，取 1440P FLV 主节点，仅支持第 1 个分 P。                                                                 |
+| 4    | 91VRChat                             | 打开第三方解析网页并自动读取结果，需要先在设置里授权。                                                                 |
+
+柠檬茶在线解析也可以手动拼接：`https://vrc.lemontea.xyz/?url=` 后面填 BV 号、B 站视频链接或 App 分享出来的文字都行。目前不支持番剧。
 
 ## 安装 / 开发
 
-从 [GitHub Releases](https://github.com/lemonteaau/bili-vrc-link/releases) 下载，解压后在浏览器扩展管理页加载。Firefox 永久安装需要 Mozilla 签名。
+从 [GitHub Releases](https://github.com/lemonteaau/bili-vrc-link/releases) 下载，解压后在浏览器的扩展管理页加载。Firefox 永久安装需要 Mozilla 签名。
 
 ```sh
 pnpm install --frozen-lockfile
 pnpm run dev           # Chrome
 pnpm run dev:firefox   # Firefox
 pnpm run check && pnpm test
+pnpm run deploy:server # 部署柠檬茶在线解析到 Vercel
 ```
+
+柠檬茶在线解析的代码在 [api/index.ts](api/index.ts)，和扩展共用 `lib/core.ts` 的解析逻辑，部署在 Vercel 香港区域，前面套 Cloudflare 代理，并按访客 IP 限速。没有用 Cloudflare Workers 托管，因为 B 站会拒绝 Workers 出口 IP 的请求（HTTP 412）。
+
+## 致谢
+
+- [糕站 VRCBilibili](https://vrcbilibili.糕.tw/) 与 [91VRChat](https://biliplayer.91vrchat.com/)：内置的第三方解析源。
+- [gizmo-ds/bilibili-real-url](https://github.com/gizmo-ds/bilibili-real-url)（屑站解析）：在线解析“每次请求实时 302 跳转”的做法参考了它。
+- [mmyo456/BiliAnalysis](https://github.com/mmyo456/BiliAnalysis)：在本机直接获取 B 站直链、替换 CDN 域名的思路参考了它。
 
 ## 许可证
 

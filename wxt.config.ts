@@ -6,7 +6,7 @@ export default defineConfig({
     name: "Bili → VRC",
     ...(browser === "chrome" ? { minimum_chrome_version: "120" } : {}),
     description:
-      "点选右键菜单解析 B 站视频，复制 VRChat 播放器链接；支持自定义解析源。",
+      "在 B 站视频上点右键，复制可直接粘贴到 VRChat 视频播放器的链接。",
     permissions: [
       "contextMenus",
       "storage",
@@ -15,6 +15,8 @@ export default defineConfig({
       "clipboardWrite",
     ],
     host_permissions: [
+      // The built-in redirect service (api/index.ts).
+      "https://vrc.lemontea.xyz/*",
       "https://api.bilibili.com/*",
       // Expanding b23.tv short links lands on the video page.
       "https://b23.tv/*",

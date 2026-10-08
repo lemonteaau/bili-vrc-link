@@ -10,6 +10,8 @@ export type Job = {
   title?: string;
   error?: string;
   copied?: boolean;
+  // Sources that failed before the current one, in the order tried.
+  attempts?: { source: string; error: string }[];
 };
 export async function settings(): Promise<Settings> {
   return (

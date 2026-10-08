@@ -1,6 +1,6 @@
 {
   "name": "bili-vrc-link",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "右键将 Bilibili 视频解析为 VRChat 播放器链接",
@@ -13,6 +13,7 @@
     "zip:firefox": "wxt zip -b firefox",
     "check": "tsc --noEmit",
     "test": "vitest run",
+    "deploy:server": "pnpm dlx vercel deploy --prod",
     "postinstall": "wxt prepare"
   },
   "devDependencies": {

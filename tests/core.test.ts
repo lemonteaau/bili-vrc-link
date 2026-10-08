@@ -7,6 +7,7 @@ import {
   resolveApi,
   validateSource,
   resolveLocal,
+  checkRedirect,
 } from "../lib/core";
 const s = defaults.sources.find((x) => x.id === "gao")!;
 const l = defaults.sources.find((x) => x.id === "local")!;
@@ -62,8 +63,13 @@ describe("本地解析", () => {
     for (const r of responses) f.mockResolvedValueOnce(r);
     return f;
   };
-  it("是默认源，按分 P 取 cid，带登录状态请求", async () => {
-    expect(defaults.activeId).toBe("local");
+  it("默认源是跳转服务；本地解析按分 P 取 cid，带登录状态请求", async () => {
+    expect(defaults.sources.map((x) => x.id)).toEqual([
+      "vrc",
+      "local",
+      "gao",
+      "91",
+    ]);
     const f = mock(
       ok([{ cid: 11 }, { cid: 22 }]),
       play([{ url: cdn("upos-sz-mirrorcosov.bilivideo.com") }]),
@@ -165,6 +171,37 @@ describe("本地解析", () => {
     ).toBe("upos-sz-mirrorali.bilivideo.com");
     expect(validateSource(l).prefix).toBe("");
     expect(() => validateSource({ ...l, prefix: "a.test/x?y" })).toThrow("CDN");
+  });
+});
+describe("在线解析服务", () => {
+  const v = defaults.sources[0]!;
+  it("跳转即成功，复制服务链接", async () => {
+    const opaque = Object.defineProperty(new Response(null), "type", {
+      value: "opaqueredirect",
+    });
+    for (const r of [opaque, new Response(null, { status: 302 })])
+      expect(
+        await checkRedirect(v, video, vi.fn().mockResolvedValue(r)),
+      ).toEqual({
+        url: "https://vrc.lemontea.xyz/?url=" + encodeURIComponent(video),
+        title: "在线解析链接（长期有效）",
+      });
+  });
+  it("转述服务给出的文字错误，网页错误只报状态码", async () => {
+    const text = new Response("视频不存在或不可见", {
+      status: 502,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+    await expect(
+      checkRedirect(v, video, vi.fn().mockResolvedValue(text)),
+    ).rejects.toThrow("视频不存在或不可见");
+    const html = new Response("<html>Forbidden</html>", {
+      status: 403,
+      headers: { "Content-Type": "text/html" },
+    });
+    await expect(
+      checkRedirect(v, video, vi.fn().mockResolvedValue(html)),
+    ).rejects.toThrow("HTTP 403");
   });
 });
 describe("只选指定流", () => {

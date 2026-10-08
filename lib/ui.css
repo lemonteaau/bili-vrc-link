@@ -209,17 +209,84 @@ main.wide {
 .sources {
   display: grid;
   gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.source-item {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
 }
 .source {
-  display: block;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   text-align: left;
-  padding: 16px;
+  padding: 14px 14px 14px 46px;
   background: transparent;
+  position: relative;
 }
-.source.selected {
+.source-item.selected .source {
   background: #e2eadb;
   border-color: #adc19d;
+}
+.order {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #fff;
+  font-size: 12px;
+  line-height: 22px;
+  text-align: center;
+}
+.move {
+  display: grid;
+  gap: 4px;
+}
+.move button {
+  padding: 0 10px;
+  font-weight: 400;
+}
+.move button:disabled {
+  cursor: default;
+  opacity: 0.3;
+}
+.small-button {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+.wide-button {
+  width: 100%;
+  margin-top: 16px;
+}
+.grow {
+  flex: 1 1 200px !important;
+  width: auto;
+}
+.steps {
+  margin: 8px 0 4px;
+  padding-left: 20px;
+  line-height: 1.9;
+  color: var(--muted);
+}
+.steps b {
+  color: #213b34;
+}
+.attempts {
+  margin: 10px 0 0;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+summary {
+  cursor: pointer;
+  font-weight: 600;
 }
 .source small {
   display: block;

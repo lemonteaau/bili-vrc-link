@@ -3,18 +3,51 @@ export type Source = {
   name: string;
   prefix: string;
   // local: prefix holds an optional replacement CDN host instead of a URL.
-  mode: "api" | "page" | "direct" | "local";
+  mode: "redirect" | "local" | "api" | "page" | "direct";
   keywords: string;
   selector: string;
   attribute: string;
 };
-export type Settings = { activeId: string; sources: Source[] };
+// Sources are tried in list order until one succeeds.
+export type Settings = { sources: Source[] };
+// Plain-language names and explanations shown in the UI.
+export const modes: Record<Source["mode"], { label: string; help: string }> = {
+  redirect: {
+    label: "在线解析服务（推荐）",
+    help: "复制一个长期有效的链接。房间里每个人播放时，服务都会实时取最新的视频地址，适合多人一起看。复制前会先确认服务能正常工作。",
+  },
+  local: {
+    label: "在本机直接获取",
+    help: "不经过任何第三方，由你的浏览器直接向 B 站获取视频地址。画质通常为 720P，登录 B 站后可能更高。链接约 2 小时后失效；登录时链接里会带有你的 B 站 UID。",
+  },
+  api: {
+    label: "解析站接口（糕站格式）",
+    help: "调用与糕站相同格式的接口，只取标题包含指定文字的那一路视频，例如 1440P FLV 主节点。目前只支持第 1 个分 P。",
+  },
+  page: {
+    label: "打开解析网页并自动读取",
+    help: "在新标签页打开解析网页，等结果出现后自动读取。遇到人机验证时会保留网页，你可以手动完成。",
+  },
+  direct: {
+    label: "只拼接链接",
+    help: "只把视频链接拼到地址后面，不做任何检查。仅在网站说明支持这样用时选择。",
+  },
+};
 export const defaults: Settings = {
-  activeId: "local",
   sources: [
     {
+      // Our own redirect service (api/index.ts): the copied link never expires.
+      id: "vrc",
+      name: "柠檬茶在线解析",
+      prefix: "https://vrc.lemontea.xyz/?url=",
+      mode: "redirect",
+      keywords: "",
+      selector: "",
+      attribute: "",
+    },
+    {
       id: "local",
-      name: "本地解析 · B 站直链",
+      name: "本机直接获取",
       prefix: "",
       mode: "local",
       keywords: "",
@@ -23,7 +56,7 @@ export const defaults: Settings = {
     },
     {
       id: "gao",
-      name: "糕 · 1440P 主节点",
+      name: "糕站 · 1440P",
       prefix: "https://vrcbilibili.糕.tw/?url=",
       mode: "api",
       keywords: "1440P FLV 主節點",
@@ -73,8 +106,9 @@ export function normalizeVideo(value: string): string {
   if (p && /^[1-9]\d*$/.test(p)) out.searchParams.set("p", p);
   return out.href;
 }
+// local and the built-in service use host permissions granted at install time.
 export function needsAccess(source: Source): boolean {
-  return source.mode === "api" || source.mode === "page";
+  return ["redirect", "api", "page"].includes(source.mode);
 }
 export function sourceUrl(source: Source, video: string): string {
   const prefix = source.prefix.trim();
@@ -90,9 +124,8 @@ export function originPattern(source: Source): string {
   return `${httpUrl(sourceUrl(source, "https://www.bilibili.com/video/BV1xx411c7mD")).origin}/*`;
 }
 export function validateSource(source: Source): Source {
-  if (!source.name.trim()) throw new Error("请填写解析源名称");
-  if (!["api", "page", "direct", "local"].includes(source.mode))
-    throw new Error("未知解析模式");
+  if (!source.name.trim()) throw new Error("请给这个解析源起个名字");
+  if (!(source.mode in modes)) throw new Error("未知解析方式");
   if (source.mode === "local") {
     const cdn = source.prefix
       .trim()
@@ -109,15 +142,39 @@ export function validateSource(source: Source): Source {
     !source.prefix.trim().includes("{rawUrl}") &&
     !source.prefix.trim().endsWith("=")
   )
-    throw new Error("填入以 = 结尾的前缀，或使用 {url} 占位符");
+    throw new Error("地址需要以 = 结尾，或用 {url} 标出视频链接的位置");
   originPattern(source);
   if (
     source.mode === "page" &&
     !source.keywords.trim() &&
     !source.selector.trim()
   )
-    throw new Error("网页提取需要匹配词或 CSS 选择器");
+    throw new Error("请填写结果标题要包含的文字，或在高级设置里填 CSS 选择器");
   return { ...source, name: source.name.trim(), prefix: source.prefix.trim() };
+}
+// A redirect service answers 3xx when it resolved the video; anything else is its error.
+export async function checkRedirect(
+  source: Source,
+  video: string,
+  fetcher: typeof fetch = fetch,
+) {
+  const url = sourceUrl(source, video);
+  let r: Response;
+  try {
+    r = await fetcher(url, {
+      redirect: "manual",
+      credentials: "omit",
+      signal: AbortSignal.timeout(20000),
+    });
+  } catch {
+    throw new Error("连不上解析服务，请检查网络");
+  }
+  if (r.type === "opaqueredirect" || (r.status >= 300 && r.status < 400))
+    return { url, title: "在线解析链接（长期有效）" };
+  const body = r.headers.get("Content-Type")?.startsWith("text/plain")
+    ? (await r.text().catch(() => "")).trim().slice(0, 200)
+    : "";
+  throw new Error(body || `解析服务返回 HTTP ${r.status}`);
 }
 export function matchesTitle(title: string, keywords: string): boolean {
   const fold = (s: string) =>

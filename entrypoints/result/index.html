@@ -9,23 +9,30 @@
     <main class="result">
       <header class="top">
         <div class="brand"><img src="/icon/48.png" alt="" />Bili → VRC</div>
-        <span class="eyebrow">Ready to play</span>
+        <button id="settings" class="quiet small-button">设置</button>
       </header>
       <h1 id="title">解析结果</h1>
       <p id="status" class="status" role="status" aria-live="polite"></p>
-      <textarea id="url" aria-label="播放器链接" readonly hidden></textarea>
+      <textarea id="url" aria-label="播放链接" readonly hidden></textarea>
       <div class="row spacer">
-        <button id="copy" class="primary" hidden>复制播放器链接</button
-        ><button id="open">打开解析网页</button
-        ><button id="settings">解析源设置</button>
+        <button id="copy" class="primary" hidden>复制播放链接</button
+        ><button id="open" hidden>打开解析网页</button>
       </div>
+      <details id="log" class="spacer" hidden>
+        <summary>尝试过程</summary>
+        <ol id="attempts" class="attempts"></ol>
+      </details>
       <hr class="divider" />
-      <label for="source">用其他解析源重试</label
-      ><select id="source"></select
-      ><button id="retry" class="spacer">重新解析</button>
+      <label for="source">换一种方式再试</label>
+      <div class="row">
+        <select id="source" class="grow"></select
+        ><button id="retry">重新解析</button>
+      </div>
       <p id="input" class="small"></p>
       <p class="hint">
-        仅按所选条件提取结果，不会自动复制其他清晰度。网页方式遇到验证或页面结构变化时，可在源站手动完成。
+        把链接粘贴到 VRChat
+        世界里视频播放器的地址栏。如果提示网址不受信任：公开房间（Public）通常无法播放；好友房或私人房间可以在
+        VRChat 设置里开启「Allow Untrusted URLs」。
       </p>
     </main>
     <script type="module" src="./main.ts"></script>

@@ -3,98 +3,86 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Bili → VRC · 解析源</title>
+    <title>Bili → VRC · 设置</title>
   </head>
   <body>
     <main class="wide">
       <header class="top">
         <div class="brand"><img src="/icon/48.png" alt="" />Bili → VRC</div>
-        <span class="eyebrow">Preferences / 01</span>
+        <span class="eyebrow">设置</span>
       </header>
       <div class="intro">
-        <span class="eyebrow">你的下一次放映，少几步。</span>
-        <h1>从 B 站，到 VRChat。</h1>
+        <h1>解析方式</h1>
         <p>
-          在视频链接或视频页的原生右键菜单中，选择「解析为 VRChat
-          播放器链接」。<br />只有点选菜单项才会运行；不修改 B
-          站页面、播放器或右键行为。
+          在 B 站视频页或视频链接上点右键，选「复制……VRChat
+          播放链接」后，插件会<b>从上到下</b>依次尝试下面的方式，第一个成功的就会被复制。<br />
+          用 ↑ ↓ 调整顺序；点一项可以查看说明或修改。
         </p>
       </div>
-      <p class="hint">
-        使用 Bili-Gate？按住 Option（⌥，Mac）或 Alt（Windows /
-        Linux）再右键视频封面，可临时打开浏览器原生菜单。普通右键继续使用
-        Bili-Gate 的菜单。
-      </p>
       <div class="settings-grid">
         <aside class="stack">
-          <div id="sources" class="sources" aria-label="解析源列表"></div>
-          <button id="add" class="quiet">＋ 添加解析源</button>
+          <ol
+            id="sources"
+            class="sources"
+            aria-label="解析方式，按尝试顺序"
+          ></ol>
+          <div class="row">
+            <button id="add" class="quiet">＋ 添加解析源</button
+            ><button id="reset" class="quiet">恢复默认</button>
+          </div>
         </aside>
         <section class="panel">
-          <h2 id="heading">编辑解析源</h2>
+          <h2 id="heading">修改解析源</h2>
           <form id="form">
+            <label for="mode">类型</label
+            ><select id="mode"></select>
+            <p id="modeHelp" class="small"></p>
             <label for="name">名称</label
             ><input id="name" required maxlength="80" /><label
               id="prefixLabel"
               for="prefix"
-              >解析链接前缀</label
-            ><input
-              id="prefix"
-              required
-              placeholder="https://example.com/?url="
-            />
-            <p id="prefixHelp" class="small">
-              直接粘贴网站提供的前缀。也可使用 {url}（编码）或
-              {rawUrl}（原样）占位符。
-            </p>
-            <label for="mode">处理方式</label
-            ><select id="mode">
-              <option value="api">直接取主节点 · 糕站兼容接口</option>
-              <option value="page">打开解析网页并提取结果</option>
-              <option value="local">本地解析 · B 站直链</option>
-              <option value="direct">复制拼接链接 · 播放器直接解析</option>
-            </select>
-            <p id="modeHelp" class="small"></p>
-            <div id="extract">
+              >网址</label
+            ><input id="prefix" />
+            <p id="prefixHelp" class="small"></p>
+            <details id="advanced">
+              <summary class="spacer">高级设置</summary>
               <label for="keywords">结果标题需要包含</label
               ><input id="keywords" placeholder="1440P FLV 主節點" />
               <p class="small">
-                空格分隔；所有词都必须出现，主节点支持简繁体。不会自动换成其他清晰度。
+                用空格分隔，每个词都要出现，简繁体都能匹配。找不到时不会改用其他清晰度。
               </p>
-            </div>
-            <details id="advanced">
-              <summary class="spacer">网页提取的高级设置</summary>
-              <label for="selector">CSS 选择器（可选）</label
-              ><input
-                id="selector"
-                placeholder=".result-item:first-child"
-              /><label for="attribute">读取属性（可选）</label
-              ><input id="attribute" placeholder="data-clipboard-text" />
-              <p class="small">
-                选择结果容器或链接 /
-                输入框。留空自动读取链接、输入框、复制按钮中的地址；填写选择器会替代标题匹配。不会执行网站提供的脚本。
-              </p>
+              <div id="pageOnly">
+                <label for="selector">CSS 选择器（可选）</label
+                ><input
+                  id="selector"
+                  placeholder=".result-item:first-child"
+                /><label for="attribute">读取属性（可选）</label
+                ><input id="attribute" placeholder="data-clipboard-text" />
+                <p class="small">
+                  留空时会自动从网页的链接、输入框和复制按钮里找地址；填写选择器后不再按标题匹配。不会运行网页里的脚本。
+                </p>
+              </div>
             </details>
-            <hr class="divider" />
-            <div class="check">
-              <input id="active" type="checkbox" /><label for="active"
-                >用作右键菜单的默认解析源</label
-              >
-            </div>
             <div class="row spacer">
-              <button class="primary" type="submit">保存并授权</button
+              <button class="primary" type="submit">保存</button
               ><button id="delete" class="quiet danger" type="button">
-                删除此源
+                删除
               </button>
             </div>
             <p id="status" class="status" role="status" aria-live="polite"></p>
           </form>
         </section>
       </div>
+      <section class="hint">
+        <b>在 VRChat 里怎么用</b><br />
+        把复制的链接粘贴到世界里视频播放器的地址栏。如果提示网址不受信任：公开房间（Public）通常无法播放；好友房或私人房间可以在
+        VRChat 设置里开启「Allow Untrusted URLs」。<br />
+        用 Bili-Gate 首页的话，按住 Option（⌥，Mac）或 Alt（Windows /
+        Linux）再右键视频封面，就能看到本插件的菜单。
+      </section>
       <footer>
-        设置仅保存在当前浏览器。本地解析以你的 B 站登录状态直接请求 B
-        站接口；第三方解析源只收到你选择的视频链接，不会收到 B 站
-        Cookie。流地址可能过期，播放前可重新解析。
+        设置只保存在这个浏览器里。在线解析服务和第三方解析站只会收到你选择的视频链接，不会收到你的
+        B 站登录信息；「在本机直接获取」会带着你的 B 站登录状态直接访问 B 站。
       </footer>
     </main>
     <script type="module" src="./main.ts"></script>

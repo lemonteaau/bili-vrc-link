@@ -5,15 +5,8 @@ import { normalizeVideo } from "../../lib/core";
 const $ = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
 const cfg = await settings();
-for (const s of cfg.sources) {
-  const option = new Option(s.name, s.id);
-  $<HTMLSelectElement>("source").add(option);
-}
-$<HTMLSelectElement>("source").value = cfg.activeId;
-$("source").onchange = async () => {
-  cfg.activeId = $<HTMLSelectElement>("source").value;
-  await browser.storage.local.set({ settings: cfg });
-};
+$("order").textContent =
+  "会依次尝试：" + cfg.sources.map((s) => s.name).join(" → ");
 $("settings").onclick = () => {
   void browser.runtime.openOptionsPage();
 };
@@ -22,15 +15,18 @@ async function render() {
   const stored = (await browser.storage.local.get("latest")).latest;
   latest = typeof stored === "string" ? stored : "";
   const job = latest ? await getJob(latest) : undefined;
+  const fallback = job?.attempts?.length
+    ? `\n前面的方式没成功，已自动换用「${job.source.name}」。`
+    : "";
   $("status").textContent = !job
-    ? "还没有解析记录。"
+    ? "还没有复制过视频。"
     : job.state === "pending"
       ? Date.now() - job.started > 60000
-        ? "解析未完成，可查看结果后重试。"
+        ? "解析一直没有完成，可以查看详情后重试。"
         : "正在解析…"
       : job.state === "error"
         ? job.error || "解析失败"
-        : `${job.copied ? "已复制" : "已就绪"} · ${job.title}`;
+        : `${job.copied ? "已复制" : "已准备好"}：${job.title}${fallback}`;
   $("status").dataset.error = String(job?.state === "error");
   $<HTMLTextAreaElement>("url").value = job?.url || "";
   $("url").hidden = !job?.url;
@@ -40,9 +36,9 @@ async function render() {
 $("copy").onclick = async () => {
   try {
     await navigator.clipboard.writeText($<HTMLTextAreaElement>("url").value);
-    $("status").textContent = "已复制，可粘贴到 VRChat 播放器。";
+    $("status").textContent = "已复制，到 VRChat 播放器里粘贴即可。";
   } catch {
-    $("status").textContent = "复制失败，请选中链接手动复制。";
+    $("status").textContent = "没能自动复制，请选中上面的链接手动复制。";
     $<HTMLTextAreaElement>("url").select();
   }
 };
@@ -59,7 +55,7 @@ try {
   normalizeVideo(tab?.url || "");
 } catch {
   $<HTMLButtonElement>("current").disabled = true;
-  $("current").textContent = "请打开 B 站视频";
+  $("current").textContent = "先打开一个 B 站视频页";
 }
 $("current").onclick = () => {
   void browser.runtime

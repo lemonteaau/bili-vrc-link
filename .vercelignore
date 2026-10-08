@@ -1,0 +1,5 @@
+# Deploy only the redirect function and the resolver it shares with the extension.
+/*
+!/api
+!/lib
+!/vercel.json
