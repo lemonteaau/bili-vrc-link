@@ -5,5 +5,7 @@
   "buildCommand": "mkdir -p public && echo User-agent: \\* > public/robots.txt",
   "outputDirectory": "public",
   "regions": ["hkg1"],
+  "git": { "deploymentEnabled": { "**": false, "main": true } },
+  "ignoreCommand": "git diff --quiet ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} HEAD -- api lib vercel.json .vercelignore",
   "rewrites": [{ "source": "/((?!api/).*)", "destination": "/api" }]
 }
