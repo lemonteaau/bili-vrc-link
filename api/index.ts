@@ -24,10 +24,18 @@ const text = (status: number, body: string) =>
     },
   });
 function target(u: URL): string {
-  const path = u.pathname.match(/^\/((?:BV|av)[a-zA-Z0-9]+)\.mp4$/i)?.[1];
-  const raw = path ?? u.searchParams.get("url") ?? "";
+  // Take ?url=, or else everything after the slash: /BV号, /av号.mp4, /https://www.bilibili.com/video/…
+  const raw =
+    u.searchParams.get("url") ??
+    decodeURIComponent(u.pathname.slice(1))
+      // Proxies may squeeze "https://" in a path down to "https:/".
+      .replace(/^(https?:)\/(?!\/)/i, "$1//");
   // Accept app share text like "【标题】 https://b23.tv/xxx", a full link, or a bare BV / av ID.
-  const link = raw.match(/https?:\/\/[^\s"'<>【】]+/)?.[0];
+  const link =
+    raw.match(/https?:\/\/[^\s"'<>【】]+/i)?.[0] ??
+    raw
+      .match(/(?:[\w-]+\.)*(?:bilibili\.com|b23\.tv)\/[^\s"'<>【】]+/i)?.[0]
+      ?.replace(/^/, "https://");
   const id = raw.match(
     /(?<![a-z0-9])(BV[a-zA-Z0-9]{10}|av\d+)(?![a-z0-9])/i,
   )?.[1];
@@ -44,13 +52,13 @@ export async function GET(request: Request): Promise<Response> {
   if (u.pathname === "/" && !u.searchParams.has("url"))
     return text(
       200,
-      "柠檬茶在线解析：/?url=B 站视频链接、分享文本或 BV 号，播放时实时跳转到 B 站 MP4 直链。",
+      "柠檬茶在线解析：在 / 后面直接接 BV 号或 B 站视频链接（也可以用 ?url=），播放时实时跳转到 B 站 MP4 直链。",
     );
   let video: string;
   try {
     video = target(u);
   } catch {
-    return text(400, "请在 ?url= 中填写 B 站视频链接或 BV 号");
+    return text(400, "没认出 B 站视频：请在 / 后面接 BV 号或 B 站视频链接");
   }
   try {
     const hit = cache.get(video);

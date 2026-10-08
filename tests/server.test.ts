@@ -44,6 +44,28 @@ describe("跳转服务", () => {
     expect((await get("/BV1Cb411c7mG.mp4")).status).toBe(302);
     expect(cidOf(5)).toBe("11");
   });
+  it("/ 后面直接接 BV 号、完整链接或短链", async () => {
+    expect((await get("/BV1Jb411c7mM")).status).toBe(302);
+    expect(f.mock.calls[0]![0]).toContain("bvid=BV1Jb411c7mM");
+    const r = await get(
+      "/https://www.bilibili.com/video/BV1Kb411c7mN/?p=2&vd_source=x",
+    );
+    expect(r.status).toBe(302);
+    expect(f.mock.calls[2]![0]).toContain("bvid=BV1Kb411c7mN");
+    expect(cidOf(3)).toBe("22");
+    // Some proxies merge the double slash after the scheme.
+    expect((await get("/https:/www.bilibili.com/video/av170001")).status).toBe(
+      302,
+    );
+    expect(f.mock.calls[4]![0]).toContain("aid=170001");
+    vi.mocked(f).mockImplementationOnce(async () =>
+      Object.defineProperty(new Response(null), "url", {
+        value: "https://www.bilibili.com/video/BV1Lb411c7mP",
+      }),
+    );
+    expect((await get("/b23.tv/abc123")).status).toBe(302);
+    expect(f.mock.calls[6]![0]).toBe("https://b23.tv/abc123");
+  });
   it("从 App 分享文本中提取链接或 BV 号", async () => {
     const share =
       "【漫威争锋】简单教学双奶奥创-哔哩哔哩】 https://b23.tv/BV1Gb411c7mK";
@@ -68,7 +90,13 @@ describe("跳转服务", () => {
   });
   it("首页说明，错误输入 400，解析失败 502", async () => {
     expect((await get("/")).status).toBe(200);
-    for (const bad of ["/?url=", "/?url=https://evil.test/video/BV1xx411c7mD"])
+    for (const bad of [
+      "/?url=",
+      "/?url=https://evil.test/video/BV1xx411c7mD",
+      "/https://evil.test/video/BV1xx411c7mD",
+      "/favicon.ico",
+      "/%E0%A4%A",
+    ])
       expect((await get(bad)).status).toBe(400);
     expect(f).not.toHaveBeenCalled();
     f.mockResolvedValueOnce(new Response(JSON.stringify({ code: -404 })));

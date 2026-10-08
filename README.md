@@ -24,7 +24,7 @@
 | 3    | 糕站 · 1440P                         | 第三方解析站，取 1440P FLV 主节点，仅支持第 1 个分 P。                                                                 |
 | 4    | 91VRChat                             | 打开第三方解析网页并自动读取结果，需要先在设置里授权。                                                                 |
 
-柠檬茶在线解析也可以手动拼接：`https://vrc.lemontea.xyz/?url=` 后面填 BV 号、B 站视频链接或 App 分享出来的文字都行。目前不支持番剧。
+柠檬茶在线解析也可以手动拼接：在 `https://vrc.lemontea.xyz/` 后面直接接 BV 号或 B 站视频链接，例如 `https://vrc.lemontea.xyz/BV1z6hJ6vEZy`、`https://vrc.lemontea.xyz/https://www.bilibili.com/video/BV1z6hJ6vEZy/?p=2`。也可以写成 `?url=`，后面填链接或 App 分享出来的文字。目前不支持番剧。
 
 ## 安装 / 开发
 
