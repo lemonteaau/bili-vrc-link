@@ -3,3 +3,5 @@
 !/api
 !/lib
 !/vercel.json
+# Git deployments need history for vercel.json's ignoreCommand; the CLI never uploads .git.
+!/.git
