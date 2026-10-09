@@ -1,12 +1,21 @@
 import "../../lib/ui.css";
 import { browser } from "wxt/browser";
 import { settings, getJob } from "../../lib/store";
-import { normalizeVideo } from "../../lib/core";
+import { normalizeVideo, modes } from "../../lib/core";
 const $ = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
 const cfg = await settings();
-$("order").textContent =
-  "会依次尝试：" + cfg.sources.map((s) => s.name).join(" → ");
+const source = $<HTMLSelectElement>("source");
+source.add(new Option("按顺序自动尝试（推荐）", ""));
+for (const s of cfg.sources) source.add(new Option("只用：" + s.name, s.id));
+function describe() {
+  const chosen = cfg.sources.find((s) => s.id === source.value);
+  $("order").textContent = chosen
+    ? `${modes[chosen.mode]?.help ?? ""}这次只用它，失败了不会换别的方式。`
+    : "会依次尝试：" + cfg.sources.map((s) => s.name).join(" → ");
+}
+source.onchange = describe;
+describe();
 $("settings").onclick = () => {
   void browser.runtime.openOptionsPage();
 };
@@ -55,11 +64,17 @@ try {
   normalizeVideo(tab?.url || "");
 } catch {
   $<HTMLButtonElement>("current").disabled = true;
+  source.disabled = true;
   $("current").textContent = "先打开一个 B 站视频页";
 }
 $("current").onclick = () => {
   void browser.runtime
-    .sendMessage({ type: "resolve", input: tab?.url, tabId: tab?.id })
+    .sendMessage({
+      type: "resolve",
+      input: tab?.url,
+      tabId: tab?.id,
+      sourceId: source.value || undefined,
+    })
     .catch((e) => {
       $("status").textContent = String(e);
     });
