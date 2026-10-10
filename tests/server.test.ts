@@ -25,7 +25,10 @@ describe("跳转服务", () => {
         ),
     );
     expect(r.status).toBe(302);
-    expect(r.headers.get("Location")).toContain("upos-sz-mirrorcosov");
+    // Overseas mirrors are swapped for estgoss, which serves a full instance much faster.
+    expect(r.headers.get("Location")).toMatch(
+      /^https:\/\/upos-sz-estgoss\.bilivideo\.com\/v\.mp4\?deadline=/,
+    );
     expect(r.headers.get("Referrer-Policy")).toBe("no-referrer");
     expect(r.headers.get("Cache-Control")).toContain("s-maxage=300");
     expect(cidOf(1)).toBe("22");
@@ -82,6 +85,17 @@ describe("跳转服务", () => {
         .status,
     ).toBe(302);
     expect(f.mock.calls[3]![0]).toContain("bvid=BV1Hb411c7mL");
+  });
+  it("Akamai 节点同样换成 estgoss", async () => {
+    vi.mocked(f)
+      .mockResolvedValueOnce(ok([{ cid: 11 }]))
+      .mockResolvedValueOnce(
+        ok({ durl: [{ url: cdn("upos-hz-mirrorakam.akamaized.net") }] }),
+      );
+    const r = await get("/BV1Mb411c7mQ");
+    expect(new URL(r.headers.get("Location")!).host).toBe(
+      "upos-sz-estgoss.bilivideo.com",
+    );
   });
   it("同一视频复用未过期的地址", async () => {
     await get("/?url=BV1Db411c7mH");

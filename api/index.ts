@@ -7,7 +7,13 @@ const HEADERS = {
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
   Referer: "https://www.bilibili.com/",
 };
-const local = defaults.sources.find((s) => s.mode === "local")!;
+// Bilibili hands our Hong Kong IP overseas mirrors (cosov, akam), which stall when a whole
+// instance loads at once; estgoss, the node 91VRChat links to, is 10× faster or more for the
+// same file. The signature does not cover the host, so serve every link from estgoss.
+const local = {
+  ...defaults.sources.find((s) => s.mode === "local")!,
+  prefix: "upos-sz-estgoss.bilivideo.com",
+};
 const cache = new Map<string, { url: string; expires: number }>();
 const fetcher: typeof fetch = (input, init) =>
   fetch(input, {

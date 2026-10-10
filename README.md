@@ -38,7 +38,7 @@ pnpm run check && pnpm test
 pnpm run deploy:server # 手动部署柠檬茶在线解析到 Vercel
 ```
 
-柠檬茶在线解析的代码在 [api/index.ts](api/index.ts)，和扩展共用 `lib/core.ts` 的解析逻辑，部署在 Vercel 香港区域，前面套 Cloudflare 代理，并按访客 IP 限速。推送到 `main` 且改动涉及 `api/`、`lib/` 或 Vercel 配置时会自动部署，其他分支和无关改动不部署。没有用 Cloudflare Workers 托管，因为 B 站会拒绝 Workers 出口 IP 的请求（HTTP 412）。
+柠檬茶在线解析的代码在 [api/index.ts](api/index.ts)，和扩展共用 `lib/core.ts` 的解析逻辑，部署在 Vercel 香港区域，前面套 Cloudflare 代理，并按访客 IP 限速。跳转时统一换成 B 站的 `upos-sz-estgoss` 节点：香港 IP 分到的海外节点（cosov、akam）在一屋子人同时加载时跟不上码率。推送到 `main` 且改动涉及 `api/`、`lib/` 或 Vercel 配置时会自动部署，其他分支和无关改动不部署。没有用 Cloudflare Workers 托管，因为 B 站会拒绝 Workers 出口 IP 的请求（HTTP 412）。
 
 ## 致谢
 
