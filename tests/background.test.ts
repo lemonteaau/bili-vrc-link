@@ -125,7 +125,7 @@ describe("原生右键菜单", () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce(
         new Response("B 站接口返回 -412", {
-          status: 502,
+          status: 503,
           headers: { "Content-Type": "text/plain; charset=utf-8" },
         }),
       )

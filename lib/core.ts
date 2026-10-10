@@ -264,6 +264,8 @@ export async function resolveApi(
 const BILI_API = "https://api.bilibili.com/x/player";
 // Malformed ID, not found, or made invisible by the uploader.
 const MISSING = [-400, -404, 62002, 62004, 62012];
+// The video or the page asked for does not exist, so retrying cannot help.
+export class NotFound extends Error {}
 // Requests come from the user's own browser and IP, which Bilibili does not ban like datacenter IPs.
 export async function resolveLocal(
   source: Source,
@@ -287,7 +289,7 @@ export async function resolveLocal(
     if (body.code === 0) return body.data;
     if (body.code === -412) throw new Error("请求被 B 站风控拦截，请稍后重试");
     if (MISSING.includes(body.code as number))
-      throw new Error("视频不存在或不可见");
+      throw new NotFound("视频不存在或不可见");
     throw new Error(`B 站接口返回 ${body.code}：${body.message || "未知错误"}`);
   }
   let video = normalizeVideo(input);
@@ -310,7 +312,7 @@ export async function resolveLocal(
   const pages = (await json("pagelist", aid ? { aid } : { bvid: id })) as
     { cid?: number }[] | null;
   const cid = pages?.[p - 1]?.cid;
-  if (!cid) throw new Error(`该视频没有第 ${p} 分 P`);
+  if (!cid) throw new NotFound(`该视频没有第 ${p} 分 P`);
   const data = (await json("playurl", {
     ...(aid ? { avid: aid } : { bvid: id }),
     cid: String(cid),

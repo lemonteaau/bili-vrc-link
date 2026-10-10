@@ -1,7 +1,12 @@
 // Vercel function: GET /?url=<B 站视频链接> (or /BV….mp4?p=2) 302-redirects to a fresh MP4 link.
 // Every VRChat client requests it when loading, so the shared link never expires.
 // Hosted on Vercel, not Cloudflare Workers: Bilibili bans Workers egress IPs with HTTP 412.
-import { defaults, normalizeVideo, resolveLocal } from "../lib/core.js";
+import {
+  defaults,
+  normalizeVideo,
+  NotFound,
+  resolveLocal,
+} from "../lib/core.js";
 const HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
@@ -91,7 +96,12 @@ export async function GET(request: Request): Promise<Response> {
       },
     });
   } catch (e) {
-    return text(502, e instanceof Error ? e.message : "解析失败，请稍后重试");
+    // Never 502 or 504: Cloudflare swaps the body of those for its own "error code: 502",
+    // and the extension shows the body to the user as the reason.
+    return text(
+      e instanceof NotFound ? 404 : 503,
+      e instanceof Error ? e.message : "解析失败，请稍后重试",
+    );
   }
 }
 export const HEAD = GET;

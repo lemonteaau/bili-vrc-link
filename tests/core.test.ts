@@ -189,7 +189,7 @@ describe("在线解析服务", () => {
   });
   it("转述服务给出的文字错误，网页错误只报状态码", async () => {
     const text = new Response("视频不存在或不可见", {
-      status: 502,
+      status: 404,
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
     await expect(

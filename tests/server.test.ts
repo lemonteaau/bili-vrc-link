@@ -102,7 +102,7 @@ describe("跳转服务", () => {
     await get("/?url=BV1Db411c7mH");
     expect(f).toHaveBeenCalledTimes(2);
   });
-  it("首页说明，错误输入 400，解析失败 502", async () => {
+  it("首页说明，错误输入 400，视频或分 P 不存在 404，其他失败 503", async () => {
     expect((await get("/")).status).toBe(200);
     for (const bad of [
       "/?url=",
@@ -115,7 +115,22 @@ describe("跳转服务", () => {
     expect(f).not.toHaveBeenCalled();
     f.mockResolvedValueOnce(new Response(JSON.stringify({ code: -404 })));
     const r = await get("/?url=BV1Eb411c7mJ");
-    expect(r.status).toBe(502);
+    expect(r.status).toBe(404);
+    expect(r.headers.get("Content-Type")).toMatch(/^text\/plain/);
     expect(await r.text()).toContain("不存在");
+    const page = await get("/?url=BV1Nb411c7mR&p=3");
+    expect(page.status).toBe(404);
+    expect(await page.text()).toContain("没有第 3 分 P");
+    // Cloudflare replaces the body of a 502 or 504, so upstream failures answer 503.
+    f.mockResolvedValueOnce(
+      new Response(JSON.stringify({ code: -412, message: "风控" })),
+    );
+    const banned = await get("/?url=BV1Pb411c7mS");
+    expect(banned.status).toBe(503);
+    expect(await banned.text()).toContain("风控");
+    f.mockRejectedValueOnce(new Error("fetch failed"));
+    const down = await get("/?url=BV1Qb411c7mT");
+    expect(down.status).toBe(503);
+    expect(await down.text()).toContain("fetch failed");
   });
 });
