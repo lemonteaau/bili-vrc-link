@@ -37,12 +37,30 @@ export default defineBackground(() => {
   }
   browser.runtime.onInstalled.addListener((details) => {
     void menus();
-    if (
-      details?.reason === "update" &&
-      /^0\.[12]\./.test(details.previousVersion ?? "")
-    )
-      void migrateSources();
+    if (details?.reason !== "update") return;
+    const from = details.previousVersion ?? "";
+    void (async () => {
+      if (/^0\.[12]\./.test(from)) await migrateSources();
+      if (/^0\.([12]\.|3\.[01]$)/.test(from)) await migrate91();
+    })();
   });
+  // Up to 0.3.1 the built-in 91VRChat source opened its parse page and read the result.
+  // Its link redirects by itself, so an unmodified one now just gets concatenated.
+  async function migrate91() {
+    const stored = (await browser.storage.local.get("settings")).settings as
+      Settings | undefined;
+    const now = defaults.sources.find((d) => d.id === "91")!;
+    const old = (s: Source) =>
+      s.id === "91" && s.mode === "page" && s.prefix === now.prefix;
+    if (!stored?.sources.some(old)) return;
+    await browser.storage.local.set({
+      settings: {
+        sources: stored.sources.map((s) =>
+          old(s) ? { ...s, mode: now.mode, keywords: now.keywords } : s,
+        ),
+      },
+    });
+  }
   // Before 0.3 one source was "active"; now list order is the fallback order.
   // Put the new built-in sources first, then the previously active one.
   async function migrateSources() {

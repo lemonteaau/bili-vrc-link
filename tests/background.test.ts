@@ -1,4 +1,5 @@
 import { beforeEach, describe, it, expect, vi } from "vitest";
+import { defaults } from "../lib/core";
 const mock = vi.hoisted(() => {
   const listeners: Record<string, Function> = {};
   const data: Record<string, any> = {};
@@ -224,6 +225,45 @@ describe("原生右键菜单", () => {
     mock.listeners.install({ reason: "update", previousVersion: "0.3.0" });
     await Promise.resolve();
     expect(mock.data.settings).toBe(before);
+  });
+  it("默认的 91VRChat 只拼接链接，不打开解析网页", async () => {
+    mock.data.settings = {
+      sources: defaults.sources.filter((s) => s.id === "91"),
+    };
+    click();
+    expect((await copied())[0]).toBe(
+      "https://biliplayer.91vrchat.com/player/?url=" +
+        encodeURIComponent("https://www.bilibili.com/video/BV1xx411c7mD?p=2"),
+    );
+    expect(mock.browser.permissions.contains).not.toHaveBeenCalled();
+    expect(mock.browser.tabs.create).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it("从 0.3.1 及更早升级时，没改过的 91VRChat 改为只拼接链接", async () => {
+    const page = {
+      ...defaults.sources.find((s) => s.id === "91")!,
+      mode: "page",
+      keywords: "1440P FLV 主節點",
+    };
+    mock.data.settings = { sources: [page] };
+    mock.listeners.install({ reason: "update", previousVersion: "0.3.1" });
+    await vi.waitFor(() =>
+      expect(mock.data.settings.sources).toEqual([
+        defaults.sources.find((s) => s.id === "91"),
+      ]),
+    );
+    const custom = {
+      sources: [{ ...page, prefix: "https://example.com/?url=" }],
+    };
+    mock.data.settings = custom;
+    mock.listeners.install({ reason: "update", previousVersion: "0.3.1" });
+    await new Promise((r) => setTimeout(r));
+    expect(mock.data.settings).toBe(custom);
+    const later = { sources: [page] };
+    mock.data.settings = later;
+    mock.listeners.install({ reason: "update", previousVersion: "0.3.2" });
+    await new Promise((r) => setTimeout(r));
+    expect(mock.data.settings).toBe(later);
   });
   it("只有点选链接菜单后解析，使用目标链接而不是当前页面", async () => {
     mock.data.settings = {

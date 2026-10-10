@@ -64,11 +64,12 @@ export const defaults: Settings = {
       attribute: "",
     },
     {
+      // The link itself 302-redirects to the stream, so the VRChat client resolves it.
       id: "91",
       name: "91VRChat",
       prefix: "https://biliplayer.91vrchat.com/player/?url=",
-      mode: "page",
-      keywords: "1440P FLV 主節點",
+      mode: "direct",
+      keywords: "",
       selector: "",
       attribute: "",
     },

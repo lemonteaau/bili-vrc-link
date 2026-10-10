@@ -22,7 +22,7 @@
 | 1    | 柠檬茶在线解析（`vrc.lemontea.xyz`） | 复制一个长期有效的链接，房间里每个人播放时都会实时取最新的视频地址。                                                   |
 | 2    | 本机直接获取                         | 不经过第三方，由浏览器直接向 B 站获取音画合一的 MP4。通常 720P，链接约 2 小时后失效；登录 B 站时链接里会带有你的 UID。 |
 | 3    | 糕站 · 1440P                         | 第三方解析站，取 1440P FLV 主节点，仅支持第 1 个分 P。                                                                 |
-| 4    | 91VRChat                             | 打开第三方解析网页并自动读取结果，需要先在设置里授权。                                                                 |
+| 4    | 91VRChat                             | 只把视频链接拼到 91VRChat 的地址后面，由 VRChat 播放器在播放时自己完成解析。                                           |
 
 柠檬茶在线解析也可以手动拼接：在 `https://vrc.lemontea.xyz/` 后面直接接 BV 号或 B 站视频链接，例如 `https://vrc.lemontea.xyz/BV1z6hJ6vEZy`、`https://vrc.lemontea.xyz/https://www.bilibili.com/video/BV1z6hJ6vEZy/?p=2`。也可以写成 `?url=`，后面填链接或 App 分享出来的文字。目前不支持番剧。
 
